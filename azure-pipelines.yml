@@ -1,0 +1,34 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger:
+- master
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+steps:
+- script: docker pull quay.io/appthreat/sast-scan
+  displayName: "ShiftLeft Scan"
+- script: |
+    docker run -e "WORKSPACE=https://github.com/ShiftLeftSecurity/tarpit-python/blob/$(Build.SourceVersion)" \
+      -e "REPOSITORY_URL=$(Build.Repository.Uri)" \
+      -e "COMMIT_SHA=$(Build.SourceVersion)" \
+      -e "GITHUB_TOKEN=$(GITHUB_TOKEN)" \
+      -e "BRANCH=$(Build.SourceBranch)" \
+      -v $(Build.SourcesDirectory):/app \
+      -v $(Build.ArtifactStagingDirectory):/reports \
+      quay.io/appthreat/sast-scan scan --src /app \
+      --out_dir /reports/CodeAnalysisLogs
+  displayName: "Perform ShiftLeft scan"
+  continueOnError: "true"
+# To integrate with the SARIF Azure DevOps Extension it is necessary to publish the CodeAnalysisLogs folder
+# as an artifact with the same name
+- task: PublishBuildArtifacts@1
+  displayName: "Publish analysis logs"
+  inputs:
+    PathtoPublish: "$(Build.ArtifactStagingDirectory)/CodeAnalysisLogs"
+    ArtifactName: "CodeAnalysisLogs"
+    publishLocation: "Container"
