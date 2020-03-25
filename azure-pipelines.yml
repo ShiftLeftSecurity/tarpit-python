@@ -21,6 +21,7 @@ steps:
       -v $(Build.SourcesDirectory):/app \
       -v $(Build.ArtifactStagingDirectory):/reports \
       quay.io/appthreat/sast-scan scan --src /app \
+      -- type credscan,python \
       --out_dir /reports/CodeAnalysisLogs
   displayName: "Perform ShiftLeft scan"
   continueOnError: "true"
